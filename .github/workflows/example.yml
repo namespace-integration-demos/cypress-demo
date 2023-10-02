@@ -1,0 +1,25 @@
+name: example-config
+on:
+  push:
+    branches:
+      - "master"
+      - "main"
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  start:
+    # example where we pass custom base URL
+    runs-on: nscloud
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Cypress tests
+        uses: cypress-io/github-action@v6
+        with:
+          working-directory: example
+          build: npm run build
+          start: npm start
+          wait-on: "http://localhost:3333"
+          config: baseUrl=http://localhost:3333
