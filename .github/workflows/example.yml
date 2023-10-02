@@ -25,18 +25,19 @@ jobs:
           kubectl expose pod nginx --type=LoadBalancer --port=80
 
       - name: Expose application
+        id: expose-cluster
         run: |
-          nsc expose kubernetes ${{ steps.create-cluster.outputs.instance-id }} \
+          export PREVIEW_URL=`nsc expose kubernetes ${{ steps.create-cluster.outputs.instance-id }} \
             --namespace=default \
             --service=nginx \
             --name=demo-ingress-name \
-            --output json | jq -r .url
+            --output json | jq -r .url`
+
+          echo "preview-url=$PREVIEW_URL" >> "$GITHUB_OUTPUT"
 
       - name: Cypress tests
         uses: cypress-io/github-action@v6
         with:
           working-directory: example
-          build: npm run build
-          start: npm start
-          wait-on: "http://localhost:3333"
-          config: baseUrl=http://localhost:3333
+          wait-on: ${{ steps.expose-cluster.outputs.preview-url }}
+          config: baseUrl=${{ steps.expose-cluster.outputs.preview-url }}
