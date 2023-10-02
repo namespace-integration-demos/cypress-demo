@@ -1,14 +1,14 @@
 /// <reference types="cypress" />
 describe('Example config', () => {
   it('has baseUrl', () => {
-    expect(Cypress.config('baseUrl')).to.equal(
-      'http://localhost:3333'
+    expect(Cypress.config('baseUrl')).to.match(
+      '\.namespaced\.app$'
     )
   })
 
   it('loads the page', () => {
     cy.visit('/')
-    cy.contains('This is a page').should('be.visible')
+    cy.contains('Welcome to nginx!').should('be.visible')
   })
 
   it.skip('fails on purpose', () => {

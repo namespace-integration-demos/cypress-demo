@@ -22,12 +22,15 @@ jobs:
       - name: Deploy NGINX
         run: |
           kubectl run nginx --image=nginx
+          kubectl expose pod nginx --type=LoadBalancer --port=80
 
       - name: Expose application
         run: |
-          kubectl expose pod nginx --type=LoadBalancer --port=80
-          kubectl get service nginx -o yaml
-          nsc expose kubernetes ${{ steps.create-cluster.outputs.instance-id }} --namespace=default --service=nginx --name=demo-ingress-name
+          nsc expose kubernetes ${{ steps.create-cluster.outputs.instance-id }} \
+            --namespace=default \
+            --service=nginx \
+            --name=demo-ingress-name \
+            --output json | jq -r .url
 
       - name: Cypress tests
         uses: cypress-io/github-action@v6
