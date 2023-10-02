@@ -15,6 +15,19 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Create a k8s cluster with Namespace
+        id: create-cluster
+        uses: namespacelabs/nscloud-cluster-action@v0
+
+      - name: Deploy NGINX
+        run: |
+          kubectl run nginx --image=nginx
+
+      - name: Expose application
+        run: |
+          kubectl expose pod nginx --type=LoadBalancer --port=80
+          nsc expose kubernetes ${{ steps.create-cluster.outputs.instance-id }} --namespace=default --service=nginx --name=demo-ingress-name
+
       - name: Cypress tests
         uses: cypress-io/github-action@v6
         with:
