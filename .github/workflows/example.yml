@@ -1,4 +1,4 @@
-name: example-config
+name: example
 on:
   push:
     branches:
@@ -8,9 +8,8 @@ on:
   workflow_dispatch:
 
 jobs:
-  start:
-    # example where we pass custom base URL
-    runs-on: nscloud
+  cypress-preview:
+    runs-on: nscloud-staging # TODO change back to prod.
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -35,9 +34,16 @@ jobs:
 
           echo "preview-url=$PREVIEW_URL" >> "$GITHUB_OUTPUT"
 
+      - name: Prepare bearer token # TODO prettify
+        id: auth
+        run: |
+          export TOKEN=`cat /var/run/nsc/token.json | jq -r .bearer_token`
+          echo "token=$TOKEN" >> "$GITHUB_OUTPUT"
+
       - name: Cypress tests
         uses: cypress-io/github-action@v6
         with:
           working-directory: example
           wait-on: ${{ steps.expose-cluster.outputs.preview-url }}
           config: baseUrl=${{ steps.expose-cluster.outputs.preview-url }}
+          env: token=${{ steps.auth.outputs.token }}
