@@ -7,15 +7,11 @@ describe('Example config', () => {
   })
 
   const token = Cypress.env('token');
-  const authorization = `Bearer ${ token }`;
-  const options = {
-    method: 'GET',
-    headers: {
-      authorization,
-    }};
+  const workspace = Cypress.env('workspace');
+  cy.setCookie(`nsc-auth-token-tenant-${ workspace }`, token);
 
   it('loads the page', () => {
-    cy.visit('/', options)
+    cy.visit('/')
     cy.contains('Welcome to nginx!').should('be.visible')
   })
 

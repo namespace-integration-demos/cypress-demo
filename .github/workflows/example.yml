@@ -42,13 +42,11 @@ jobs:
           echo "::add-mask::$TOKEN"
           echo "token=$TOKEN" >> "$GITHUB_OUTPUT"
 
-      - name: Curl debugging # TODO remove
-        run: |
-          export WORKSPACE=`cat /var/run/nsc/token.json | jq '.bearer_token[5:] | split(".") | .[1] | @base64d | fromjson ' | jq -r '.tenant_id[7:]'` 
+          export WORKSPACE=`cat /var/run/nsc/token.json \
+            | jq '.bearer_token[5:] | split(".") | .[1] | @base64d | fromjson ' \
+            | jq -r '.tenant_id[7:]'`
 
-          curl -v \
-          --cookie "nsc-auth-token-tenant-$WORKSPACE=${{ steps.auth.outputs.token }}" \
-          '${{ steps.expose-cluster.outputs.preview-url }}'
+          echo "workspace=$WORKSPACE" >> "$GITHUB_OUTPUT"
 
       - name: Cypress tests
         uses: cypress-io/github-action@v6
@@ -56,4 +54,4 @@ jobs:
           working-directory: example
           wait-on: ${{ steps.expose-cluster.outputs.preview-url }}
           config: baseUrl=${{ steps.expose-cluster.outputs.preview-url }}
-          env: token=${{ steps.auth.outputs.token }}
+          env: token=${{ steps.auth.outputs.token }},workspace=${{ steps.auth.outputs.workspace }}
