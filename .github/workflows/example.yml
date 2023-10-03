@@ -32,13 +32,15 @@ jobs:
             --name=demo-ingress-name \
             --output json | jq -r .url`
 
-          echo "preview-url=$PREVIEW_URL" >> "$GITHUB_OUTPUT"
+          echo "::set-output name=preview-url::$PREVIEW_URL"
 
       - name: Prepare bearer token # TODO prettify
         id: auth
         run: |
           export TOKEN=`cat /var/run/nsc/token.json | jq -r .bearer_token`
-          echo "token=$TOKEN" >> "$GITHUB_OUTPUT"
+
+          echo "::add-mask::$TOKEN"
+          echo "::set-output name=token::$TOKEN"
 
       - name: Cypress tests
         uses: cypress-io/github-action@v6
