@@ -1,8 +1,8 @@
 /// <reference types="cypress" />
 beforeEach(() => {
-  const token = Cypress.env('token');
-  const workspace = Cypress.env('workspace');
-  cy.setCookie(`nsc-auth-token-tenant-${ workspace }`, token);
+  cy.intercept(`${Cypress.config('baseUrl')}**`, req => {
+      req.headers['x-nsc-ingress-auth'] = Cypress.env('token')
+  })
 })
 
 describe('Example config', () => {

@@ -37,23 +37,17 @@ jobs:
 
           echo "preview-url=$PREVIEW_URL" >> "$GITHUB_OUTPUT"
 
-      - name: Prepare bearer token # TODO prettify
+      - name: Obtain access token
         id: auth
         run: |
-          export TOKEN=`cat /var/run/nsc/token.json | jq -r .bearer_token`
+          export TOKEN=`nsc ingress generate-access-token --instance ${{ steps.create-cluster.outputs.instance-id }}`
 
           echo "::add-mask::$TOKEN"
           echo "token=$TOKEN" >> "$GITHUB_OUTPUT"
-
-          export WORKSPACE=`cat /var/run/nsc/token.json \
-            | jq '.bearer_token[5:] | split(".") | .[1] | @base64d | fromjson ' \
-            | jq -r '.tenant_id[7:]'`
-
-          echo "workspace=$WORKSPACE" >> "$GITHUB_OUTPUT"
 
       - name: Cypress tests
         uses: cypress-io/github-action@v6
         with:
           working-directory: example
           config: baseUrl=${{ steps.expose-cluster.outputs.preview-url }}
-          env: token=${{ steps.auth.outputs.token }},workspace=${{ steps.auth.outputs.workspace }}
+          env: token=${{ steps.auth.outputs.token }}
