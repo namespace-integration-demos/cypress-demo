@@ -9,7 +9,7 @@ on:
 
 jobs:
   cypress-preview:
-    runs-on: nscloud-staging # TODO change back to prod.
+    runs-on: nscloud-staging
     steps:
       - name: Checkout
         uses: actions/checkout@v4
