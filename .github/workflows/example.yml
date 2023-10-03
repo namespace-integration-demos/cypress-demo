@@ -44,8 +44,10 @@ jobs:
 
       - name: Curl debugging # TODO remove
         run: |
-          curl -v -X GET \                                                                                  
-          -H 'Authorization: Bearer ${{ steps.auth.outputs.token }}' \
+          export WORKSPACE=`nsc workspace describe -o json | jq -r ".tenant_id[7:]"` 
+
+          curl -v \
+          --cookie "nsc-auth-token-tenant-$WORKSPACE=${{ steps.auth.outputs.token }}"
           '${{ steps.expose-cluster.outputs.preview-url }}'
 
       - name: Cypress tests
