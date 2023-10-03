@@ -7,7 +7,7 @@ describe('Example config', () => {
   })
 
   const token = Cypress.env('token');
-  const authorization = `bearer ${ token }`;
+  const authorization = `Bearer ${ token }`;
   const options = {
     method: 'GET',
     headers: {
