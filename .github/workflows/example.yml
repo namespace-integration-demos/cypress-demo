@@ -1,0 +1,50 @@
+name: example
+on:
+  push:
+    branches:
+      - "master"
+      - "main"
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  cypress-preview:
+    runs-on: nscloud-staging # TODO change back to prod.
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Create a k8s cluster with Namespace
+        id: create-cluster
+        uses: namespacelabs/nscloud-cluster-action@v0
+
+      - name: Deploy NGINX
+        run: |
+          kubectl run nginx --image=nginx
+          kubectl expose pod nginx --type=LoadBalancer --port=80
+
+      - name: Expose application
+        id: expose-cluster
+        run: |
+          export PREVIEW_URL=`nsc expose kubernetes ${{ steps.create-cluster.outputs.instance-id }} \
+            --namespace=default \
+            --service=nginx \
+            --name=demo-ingress-name \
+            --output json | jq -r .url`
+
+          echo "preview-url=$PREVIEW_URL" >> "$GITHUB_OUTPUT"
+
+      - name: Obtain access token
+        id: auth
+        run: |
+          export TOKEN=`nsc ingress generate-access-token --instance ${{ steps.create-cluster.outputs.instance-id }}`
+
+          echo "::add-mask::$TOKEN"
+          echo "token=$TOKEN" >> "$GITHUB_OUTPUT"
+
+      - name: Cypress tests
+        uses: cypress-io/github-action@v6
+        with:
+          working-directory: example
+          config: baseUrl=${{ steps.expose-cluster.outputs.preview-url }}
+          env: token=${{ steps.auth.outputs.token }}
