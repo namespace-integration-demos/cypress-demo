@@ -26,6 +26,9 @@ jobs:
       - name: Expose application
         id: expose-cluster
         run: |
+          # TODO guarantee that k8s service exists (nsc expose kubernetes --wait?)
+          sleep 2
+
           export PREVIEW_URL=`nsc expose kubernetes ${{ steps.create-cluster.outputs.instance-id }} \
             --namespace=default \
             --service=nginx \
