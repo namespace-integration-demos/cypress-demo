@@ -23,17 +23,18 @@ jobs:
           kubectl run nginx --image=nginx
           kubectl expose pod nginx --type=LoadBalancer --port=80
 
+          kubectl get service nginx -o json # TODO remove
+
       - name: Expose application
         id: expose-cluster
         run: |
-          # TODO guarantee that k8s service exists (nsc expose kubernetes --wait?)
-          sleep 2
-
           export PREVIEW_URL=`nsc expose kubernetes ${{ steps.create-cluster.outputs.instance-id }} \
             --namespace=default \
             --service=nginx \
             --name=demo-ingress-name \
             --output json | jq -r .url`
+
+          kubectl get service nginx -o json # TODO remove
 
           echo "preview-url=$PREVIEW_URL" >> "$GITHUB_OUTPUT"
 
@@ -51,3 +52,10 @@ jobs:
           working-directory: example
           config: baseUrl=${{ steps.expose-cluster.outputs.preview-url }}
           env: token=${{ steps.auth.outputs.token }}
+
+      - name: Breakpoint if tests failed
+        if: failure()
+        uses: namespacelabs/breakpoint-action@v0
+        with:
+          duration: 30m
+          authorized-users: n-g
