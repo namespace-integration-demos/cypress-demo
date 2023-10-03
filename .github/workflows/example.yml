@@ -44,10 +44,10 @@ jobs:
 
       - name: Curl debugging # TODO remove
         run: |
-          export WORKSPACE=`nsc workspace describe -o json | jq -r ".tenant_id[7:]"` 
+          export WORKSPACE=`cat /var/run/nsc/token.json | jq '.bearer_token[5:] | split(".") | .[1] | @base64d | fromjson ' | jq -r '.tenant_id[7:]'` 
 
           curl -v \
-          --cookie "nsc-auth-token-tenant-$WORKSPACE=${{ steps.auth.outputs.token }}"
+          --cookie "nsc-auth-token-tenant-$WORKSPACE=${{ steps.auth.outputs.token }}" \
           '${{ steps.expose-cluster.outputs.preview-url }}'
 
       - name: Cypress tests
