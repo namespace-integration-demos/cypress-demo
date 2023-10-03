@@ -52,6 +52,5 @@ jobs:
         uses: cypress-io/github-action@v6
         with:
           working-directory: example
-          wait-on: ${{ steps.expose-cluster.outputs.preview-url }}
           config: baseUrl=${{ steps.expose-cluster.outputs.preview-url }}
           env: token=${{ steps.auth.outputs.token }},workspace=${{ steps.auth.outputs.workspace }}
