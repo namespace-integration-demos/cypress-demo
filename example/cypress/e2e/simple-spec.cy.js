@@ -1,7 +1,7 @@
 /// <reference types="cypress" />
 beforeEach(() => {
   cy.intercept(`${Cypress.config('baseUrl')}**`, req => {
-      req.headers['x-nsc-ingress-auth'] = Cypress.env('token')
+      req.headers['x-nsc-ingress-auth'] = `Bearer ${ Cypress.env('token') }`
   })
 })
 
