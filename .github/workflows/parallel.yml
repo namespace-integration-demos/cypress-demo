@@ -15,9 +15,6 @@ jobs:
       access-token: ${{ steps.auth.outputs.token }}
       preview-url: ${{ steps.expose-cluster.outputs.preview-url }}
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
       - name: Create a k8s cluster with Namespace
         id: create-cluster
         uses: namespacelabs/nscloud-cluster-action@v0
@@ -53,6 +50,8 @@ jobs:
     runs-on: nscloud
     needs: prepare
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
       - name: Cypress tests
         uses: cypress-io/github-action@v6
         with:
@@ -64,6 +63,8 @@ jobs:
     runs-on: nscloud
     needs: prepare
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
       - name: Cypress tests
         uses: cypress-io/github-action@v6
         with:
