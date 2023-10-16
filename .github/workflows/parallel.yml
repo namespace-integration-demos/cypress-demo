@@ -8,8 +8,12 @@ on:
   workflow_dispatch:
 
 jobs:
-  cypress-preview:
+  prepare:
     runs-on: nscloud
+    outputs:
+      instance-id: ${{ steps.create-cluster.outputs.instance-id }}
+      access-token: ${{ steps.auth.outputs.token }}
+      preview-url: ${{ steps.expose-cluster.outputs.preview-url }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -17,6 +21,8 @@ jobs:
       - name: Create a k8s cluster with Namespace
         id: create-cluster
         uses: namespacelabs/nscloud-cluster-action@v0
+        with:
+          preview: true # Do not destroy the cluster at the end of this job
 
       - name: Deploy NGINX
         run: |
@@ -38,13 +44,39 @@ jobs:
             --namespace=default \
             --service=nginx \
             --name=demo-ingress-name \
+            --ingress '*=noauth' \
             --output json | jq -r .url`
 
           echo "preview-url=$PREVIEW_URL" >> "$GITHUB_OUTPUT"
 
+  withauth:
+    runs-on: nscloud
+    needs: prepare
+    steps:
       - name: Cypress tests
         uses: cypress-io/github-action@v6
         with:
           working-directory: example/withauth
-          config: baseUrl=${{ steps.expose-cluster.outputs.preview-url }}
-          env: token=${{ steps.auth.outputs.token }}
+          config: baseUrl=${{ needs.prepare.outputs.preview-url }}
+          env: token=${{ needs.prepare.outputs.access-token }}
+
+  noauth:
+    runs-on: nscloud
+    needs: prepare
+    steps:
+      - name: Cypress tests
+        uses: cypress-io/github-action@v6
+        with:
+          working-directory: example/noauth
+          config: baseUrl=${{ needs.prepare.outputs.preview-url }}
+
+  cleanup:
+    runs-on: nscloud
+    needs:
+      - prepare
+      - withauth
+      - noauth
+    steps:
+      - name: Clean up demo
+        run: |
+          nsc cluster destroy --force ${{ needs.prepare.outputs.instance-id }}
