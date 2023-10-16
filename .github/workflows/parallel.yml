@@ -9,7 +9,7 @@ on:
 
 jobs:
   prepare:
-    runs-on: nscloud
+    runs-on: nscloud-staging # move to nscloud after release
     outputs:
       instance-id: ${{ steps.create-cluster.outputs.instance-id }}
       access-token: ${{ steps.auth.outputs.token }}
@@ -73,6 +73,7 @@ jobs:
 
   cleanup:
     runs-on: nscloud
+    if: ${{ needs.prepare.outputs.instance-id != ''}}
     needs:
       - prepare
       - withauth
