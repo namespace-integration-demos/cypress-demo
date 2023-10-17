@@ -27,15 +27,13 @@ jobs:
 
       - name: Expose application
         id: expose-cluster
-        run: |
-          export PREVIEW_URL=`nsc expose kubernetes ${{ steps.create-cluster.outputs.instance-id }} \
-            --namespace=default \
-            --service=nginx \
-            --name=demo-ingress-name \
-            --ingress '*=noauth' \
-            --output json | jq -r .url`
-
-          echo "preview-url=$PREVIEW_URL" >> "$GITHUB_OUTPUT"
+        uses: namespacelabs/nscloud-expose-kubernetes-action@v0
+        with:
+          instance-id: ${{ steps.create-cluster.outputs.instance-id }}
+          namespace: default
+          service: nginx
+          name: demo-ingress-name
+          ingress: noauth
 
   noauth:
     runs-on: nscloud
