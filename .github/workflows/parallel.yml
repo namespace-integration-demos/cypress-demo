@@ -12,7 +12,6 @@ jobs:
     runs-on: nscloud-staging # move to nscloud after release
     outputs:
       instance-id: ${{ steps.create-cluster.outputs.instance-id }}
-      access-token: ${{ steps.auth.outputs.token }}
       preview-url: ${{ steps.expose-cluster.outputs.preview-url }}
     steps:
       - name: Create a k8s cluster with Namespace
@@ -26,14 +25,6 @@ jobs:
           kubectl run nginx --image=nginx
           kubectl expose pod nginx --type=LoadBalancer --port=80
 
-      - name: Obtain access token
-        id: auth
-        run: |
-          export TOKEN=`nsc ingress generate-access-token --instance ${{ steps.create-cluster.outputs.instance-id }}`
-
-          echo "::add-mask::$TOKEN"
-          echo "token=$TOKEN" >> "$GITHUB_OUTPUT"
-
       - name: Expose application
         id: expose-cluster
         run: |
@@ -46,19 +37,6 @@ jobs:
 
           echo "preview-url=$PREVIEW_URL" >> "$GITHUB_OUTPUT"
 
-  withauth:
-    runs-on: nscloud
-    needs: prepare
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Cypress tests
-        uses: cypress-io/github-action@v6
-        with:
-          working-directory: example/withauth
-          config: baseUrl=${{ needs.prepare.outputs.preview-url }}
-          env: token=${{ needs.prepare.outputs.access-token }}
-
   noauth:
     runs-on: nscloud
     needs: prepare
@@ -70,6 +48,26 @@ jobs:
         with:
           working-directory: example/noauth
           config: baseUrl=${{ needs.prepare.outputs.preview-url }}
+
+  withauth:
+    runs-on: nscloud
+    needs: prepare
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Obtain access token
+        id: auth
+        run: |
+          export TOKEN=`nsc ingress generate-access-token --instance ${{ needs.prepare.outputs.instance-id }}`
+
+          echo "::add-mask::$TOKEN"
+          echo "token=$TOKEN" >> "$GITHUB_OUTPUT"
+      - name: Cypress tests
+        uses: cypress-io/github-action@v6
+        with:
+          working-directory: example/withauth
+          config: baseUrl=${{ needs.prepare.outputs.preview-url }}
+          env: token=${{ steps.auth.outputs.token }}
 
   cleanup:
     runs-on: nscloud
