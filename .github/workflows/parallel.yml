@@ -1,0 +1,80 @@
+name: parallel
+on:
+  push:
+    branches:
+      - "master"
+      - "main"
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  prepare:
+    runs-on: nscloud
+    outputs:
+      instance-id: ${{ steps.create-cluster.outputs.instance-id }}
+      preview-url: ${{ steps.expose-cluster.outputs.preview-url }}
+    steps:
+      - name: Create a k8s cluster with Namespace
+        id: create-cluster
+        uses: namespacelabs/nscloud-cluster-action@v0
+        with:
+          preview: true # Do not destroy the cluster at the end of this job
+
+      - name: Deploy NGINX
+        run: |
+          kubectl run nginx --image=nginx
+          kubectl expose pod nginx --type=LoadBalancer --port=80
+
+      - name: Expose application
+        id: expose-cluster
+        uses: namespacelabs/nscloud-expose-kubernetes-action@v0
+        with:
+          instance-id: ${{ steps.create-cluster.outputs.instance-id }}
+          namespace: default
+          service: nginx
+          name: demo-ingress-name
+          ingress: noauth
+
+  noauth:
+    runs-on: nscloud
+    needs: prepare
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Cypress tests
+        uses: cypress-io/github-action@v6
+        with:
+          working-directory: example/noauth
+          config: baseUrl=${{ needs.prepare.outputs.preview-url }}
+
+  withauth:
+    runs-on: nscloud
+    needs: prepare
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Obtain access token
+        id: auth
+        run: |
+          export TOKEN=`nsc ingress generate-access-token --instance ${{ needs.prepare.outputs.instance-id }}`
+
+          echo "::add-mask::$TOKEN"
+          echo "token=$TOKEN" >> "$GITHUB_OUTPUT"
+      - name: Cypress tests
+        uses: cypress-io/github-action@v6
+        with:
+          working-directory: example/withauth
+          config: baseUrl=${{ needs.prepare.outputs.preview-url }}
+          env: token=${{ steps.auth.outputs.token }}
+
+  cleanup:
+    runs-on: nscloud
+    if: ${{ needs.prepare.outputs.instance-id != ''}}
+    needs:
+      - prepare
+      - withauth
+      - noauth
+    steps:
+      - name: Clean up demo
+        run: |
+          nsc cluster destroy --force ${{ needs.prepare.outputs.instance-id }}

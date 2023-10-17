@@ -1,5 +1,5 @@
 {
-  "name": "example-config",
+  "name": "withauth-config",
   "version": "1.0.0",
   "description": "pass baseUrl config value via action",
   "main": "index.js",
