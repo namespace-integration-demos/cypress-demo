@@ -9,7 +9,7 @@ on:
 
 jobs:
   prepare:
-    runs-on: nscloud-staging # move to nscloud after release
+    runs-on: nscloud
     outputs:
       instance-id: ${{ steps.create-cluster.outputs.instance-id }}
       preview-url: ${{ steps.expose-cluster.outputs.preview-url }}
