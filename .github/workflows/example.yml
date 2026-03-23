@@ -6,6 +6,11 @@ on:
       - "main"
   pull_request:
   workflow_dispatch:
+    inputs:
+      wait-for-inspection:
+        description: "Wait 5 minutes after tests for manual inspection of the preview"
+        type: boolean
+        default: false
 
 jobs:
   cypress-preview:
@@ -23,28 +28,30 @@ jobs:
           kubectl run nginx --image=nginx
           kubectl expose pod nginx --type=LoadBalancer --port=80
 
-      - name: Obtain access token
-        id: auth
+      - name: Wait for NGINX to be ready
         run: |
-          export TOKEN=`nsc ingress generate-access-token --instance ${{ steps.create-cluster.outputs.instance-id }}`
-
-          echo "::add-mask::$TOKEN"
-          echo "token=$TOKEN" >> "$GITHUB_OUTPUT"
+          kubectl wait --for=condition=Ready pod/nginx --timeout=60s
+          kubectl get pods -o wide
+          kubectl get svc nginx
 
       - name: Expose application
         id: expose-cluster
-        run: |
-          export PREVIEW_URL=`nsc expose kubernetes ${{ steps.create-cluster.outputs.instance-id }} \
-            --namespace=default \
-            --service=nginx \
-            --name=demo-ingress-name \
-            --output json | jq -r .url`
-
-          echo "preview-url=$PREVIEW_URL" >> "$GITHUB_OUTPUT"
+        uses: namespacelabs/nscloud-expose-kubernetes-action@v0
+        with:
+          instance-id: ${{ steps.create-cluster.outputs.instance-id }}
+          namespace: default
+          service: nginx
 
       - name: Cypress tests
         uses: cypress-io/github-action@v6
         with:
           working-directory: example/withauth
           config: baseUrl=${{ steps.expose-cluster.outputs.preview-url }}
-          env: token=${{ steps.auth.outputs.token }}
+          env: token=${{ steps.expose-cluster.outputs.access-token }}
+
+      - name: Wait for manual inspection
+        if: ${{ inputs.wait-for-inspection == true }}
+        run: |
+          echo "Preview URL: ${{ steps.expose-cluster.outputs.preview-url }}"
+          echo "Waiting 5 minutes for manual inspection..."
+          sleep 300
